@@ -1,0 +1,48 @@
+# 🔹 Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 🔹 Ambientes virtuais
+venv/
+.env/
+.venv/
+
+# 🔹 Configuração local
+.env
+.env.*
+
+# 🔹 Streamlit
+.streamlit/secrets.toml
+
+# 🔹 Logs
+*.log
+
+# 🔹 Sistema operacional
+.DS_Store
+Thumbs.db
+
+# 🔹 IDEs
+.vscode/
+.idea/
+
+# 🔹 Build / dist
+build/
+dist/
+*.egg-info/
+
+# 🔹 Arquivos temporários
+*.tmp
+*.swp
+
+# 🔹 Jupyter (se usar)
+.ipynb_checkpoints/
+
+# 🔹 Testes / cobertura
+.coverage
+htmlcov/
+.pytest_cache/
+
+# 🔹 Claude Code
+.claude/
