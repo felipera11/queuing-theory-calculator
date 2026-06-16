@@ -42,35 +42,45 @@ def _parse_numeric_expression(value_str):
     return float(eval(compile(expression, "<input>", "eval"), {"__builtins__": {}}, {}))
 
 
-def input_rate(symbol, key_prefix):
-    
+def input_rate(label, key_prefix, help_text=None):
     value_str = st.text_input(
-        symbol,
-        placeholder=f"Ex: 3 (clientes/hora)",
-        key=f"{key_prefix}_input"
+        label,
+        placeholder="Ex: 10  ou  1/6  (aceita expressões)",
+        key=f"{key_prefix}_input",
+        help=help_text,
     )
 
     try:
         parsed_value = _parse_numeric_expression(value_str)
         return parsed_value if parsed_value is not None else 0
     except (ValueError, TypeError):
-        st.error(f"Digite um número válido para {symbol}")
+        st.error(f"Digite um número válido para {label}")
         return 0
 
 
 def input_lambda(prefix=""):
-    return input_rate("λ (taxa de chegada)", f"{prefix}_lambda")
+    return input_rate(
+        "λ — Taxa de chegada (clientes/hora)",
+        f"{prefix}_lambda",
+        help_text="Número médio de clientes que chegam por hora. Aceita frações: ex. 1/6.",
+    )
+
 
 def input_mi(prefix=""):
-    return input_rate("μ (taxa de serviço)", f"{prefix}_mi")
+    return input_rate(
+        "μ — Taxa de serviço (clientes/hora)",
+        f"{prefix}_mi",
+        help_text="Número médio de clientes atendidos por hora por servidor. Aceita frações: ex. 1/4.",
+    )
 
 
-def input_integer(label, key, default=0, placeholder=None, min_value=None, max_value=None):
+def input_integer(label, key, default=0, placeholder=None, min_value=None, max_value=None, help_text=None):
     value_str = st.text_input(
         label,
         value=str(default),
         placeholder=placeholder or f"Ex: {default}",
         key=key,
+        help=help_text,
     )
 
     try:
@@ -91,12 +101,13 @@ def input_integer(label, key, default=0, placeholder=None, min_value=None, max_v
     return value
 
 
-def input_float_value(label, key, default=0.0, placeholder=None, min_value=None, max_value=None):
+def input_float_value(label, key, default=0.0, placeholder=None, min_value=None, max_value=None, help_text=None):
     value_str = st.text_input(
         label,
         value="" if default is None else str(default),
         placeholder=placeholder or f"Ex: {default}",
         key=key,
+        help=help_text,
     )
 
     if not value_str:

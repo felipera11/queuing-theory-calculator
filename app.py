@@ -3,7 +3,7 @@ from views import mm1_page, mms_page, mm1k_page, mmsk_page, mm1n_page, mmsn_page
 from utils.ui import inject_theme
 
 
-st.set_page_config(page_title="Simulador de Filas", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Simulador de Filas", page_icon="📊", layout="wide")
 
 inject_theme()
 
@@ -18,25 +18,32 @@ pages = {
     "Prioridades": priority_page,
 }
 
-if "show_models" not in st.session_state:
-    st.session_state.show_models = False
+MODEL_LABELS = {
+    "M/M/1":       "M/M/1  —  1 servidor, cap. ∞",
+    "M/M/s":       "M/M/s  —  s servidores, cap. ∞",
+    "M/M/1/K":     "M/M/1/K  —  1 servidor, cap. K",
+    "M/M/s/K":     "M/M/s/K  —  s servidores, cap. K",
+    "M/M/1/N":     "M/M/1/N  —  pop. finita N",
+    "M/M/s/N":     "M/M/s/N  —  s servidores, pop. N",
+    "M/G/1":       "M/G/1  —  serviço geral",
+    "Prioridades": "Prioridades  —  múltiplas classes",
+}
 
 if "selected_model" not in st.session_state:
     st.session_state.selected_model = "M/M/1"
 
 
 with st.sidebar:
-    toggle_label = "Ocultar modelos" if st.session_state.show_models else "Mostrar modelos"
-    if st.button(toggle_label, use_container_width=True, key="toggle_models"):
-        st.session_state.show_models = not st.session_state.show_models
-        st.rerun()
-
-    if st.session_state.show_models:
-        st.radio(
-            "Modelos",
-            list(pages.keys()),
-            key="selected_model",
-            label_visibility="collapsed",
-        )
+    st.markdown("## 📊 Simulador de Filas")
+    st.caption("Calculadora de Teoria das Filas")
+    st.divider()
+    st.markdown("**Selecione o modelo:**")
+    st.radio(
+        "Modelos",
+        list(pages.keys()),
+        key="selected_model",
+        label_visibility="collapsed",
+        format_func=lambda x: MODEL_LABELS.get(x, x),
+    )
 
 pages[st.session_state.selected_model].render()

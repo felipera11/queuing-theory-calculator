@@ -1,15 +1,18 @@
 import streamlit as st
 
 from models.mg1_model import MG1
-from utils.input_helpers import input_float_value, input_lambda
-from utils.input_helpers import input_mi
+from utils.input_helpers import input_float_value, input_lambda, input_mi
 from utils.ui import metric_grid
 
 
 def render():
-
     st.header("Modelo M/G/1")
-    st.caption("Informe σ (desvio-padrão). O sistema converte para σ² antes de calcular.")
+    st.info(
+        "Fila com chegadas Poisson (λ), **distribuição de serviço geral** e 1 servidor. "
+        "A distribuição do tempo de serviço pode ser qualquer uma — basta informar a média (1/μ) e o desvio-padrão σ. "
+        "Fórmula de Pollaczek-Khinchine (P-K).",
+        icon="ℹ️",
+    )
 
     col1, col2, col3 = st.columns(3)
 
@@ -21,10 +24,14 @@ def render():
 
     with col3:
         sigma = input_float_value(
-            "σ (desvio-padrão, opcional)",
+            "σ — Desvio-padrão do tempo de serviço (opcional)",
             "mg1_sigma",
-            placeholder="Opcional - Ex: 4",
-            
+            placeholder="Ex: 0.05",
+            help_text=(
+                "Desvio-padrão da distribuição de serviço (em horas). "
+                "O sistema calcula σ² internamente. "
+                "Se omitido, usa σ = 0 (serviço determinístico → M/D/1)."
+            ),
         )
 
     st.divider()
@@ -40,13 +47,16 @@ def render():
             return
 
         st.subheader("Resultados")
+        st.caption(f"σ informado: {sigma}  |  σ² usado no cálculo: {sigma_variance:.6g}")
 
-        st.caption(f"σ informado: {sigma} | σ² usado no cálculo: {sigma_variance}")
+        w_minutes = fila.avg_time_system() * 60
+        wq_minutes = fila.avg_time_queue() * 60
+
         metric_grid([
-            ("ρ", fila.rho),
-            ("P0", fila.p0),
-            ("Lq", fila.avg_clients_queue()),
-            ("Wq", f"{fila.avg_time_queue():.4f} horas"),
-            ("L", fila.avg_clients_system()),
-            ("W", f"{fila.avg_time_system():.4f} horas"),
+            ("ρ", fila.rho, "Utilização do servidor (λ/μ)"),
+            ("P₀", fila.p0, "Probabilidade do sistema estar ocioso (P₀ = 1 − ρ)"),
+            ("Lq", fila.avg_clients_queue(), "Número médio de clientes aguardando na fila"),
+            ("Wq", f"{wq_minutes:.4g} min", "Tempo médio que um cliente aguarda na fila"),
+            ("L", fila.avg_clients_system(), "Número médio de clientes no sistema"),
+            ("W", f"{w_minutes:.4g} min", "Tempo médio que um cliente passa no sistema"),
         ], columns=2)

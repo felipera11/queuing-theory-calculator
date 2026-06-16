@@ -72,9 +72,63 @@ def inject_theme():
 			color: var(--text-muted);
 		}
 
+		/* Títulos da página maiores e mais marcantes */
+		h1 { font-size: 2.2rem !important; font-weight: 800 !important; letter-spacing: -0.5px; }
+		h2 { font-size: 1.6rem !important; font-weight: 700 !important; }
+		h3 { font-size: 1.3rem !important; font-weight: 700 !important; }
+
+		/* Labels de inputs maiores e em destaque */
+		[data-testid="stWidgetLabel"] p,
+		[data-testid="stWidgetLabel"] {
+			font-size: 1.25rem !important;
+			font-weight: 600 !important;
+			color: var(--text-main) !important;
+			margin-bottom: 2px;
+		}
+
+		/* Labels de métricas maiores */
+		[data-testid="stMetricLabel"] div,
+		[data-testid="stMetricLabel"],
+		[data-testid="stMetricLabel"] * {
+			font-size: 1.5rem !important;
+			font-weight: 700 !important;
+			color: var(--text-main) !important;
+		}
+
+		/* Caption de descrição das métricas — legível no datashow */
+		[data-testid="stCaptionContainer"] p,
+		.stCaption p,
+		[data-testid="stCaptionContainer"],
+		.stCaption {
+			font-size: 1.15rem !important;
+			color: var(--text-muted) !important;
+			margin-top: 6px;
+			line-height: 1.5;
+		}
+
+		/* Texto dentro do info box (descrição do modelo) */
+		[data-testid="stAlert"] p,
+		[data-testid="stAlert"] div,
+		[data-testid="stAlert"] {
+			font-size: 1.15rem !important;
+			line-height: 1.6;
+		}
+
+		/* Radio buttons do sidebar */
+		[data-testid="stSidebar"] [data-testid="stRadio"] label {
+			font-size: 1.05rem !important;
+			padding: 4px 0;
+		}
+
 		[data-testid="stSidebar"] {
 			background: #09101c;
 			border-right: 1px solid var(--border-color);
+		}
+
+		/* Info box (descrição dos modelos) */
+		[data-testid="stAlert"][data-baseweb="notification"] {
+			border-radius: 12px;
+			font-size: 0.93rem;
 		}
 
 		.stButton > button {
@@ -84,6 +138,7 @@ def inject_theme():
 			border-radius: 12px;
 			padding: 0.55rem 1rem;
 			font-weight: 600;
+			font-size: 1rem;
 			transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 		}
 
@@ -105,6 +160,7 @@ def inject_theme():
 			color: var(--text-main);
 			border: 1px solid var(--border-color);
 			border-radius: 10px;
+			font-size: 1rem;
 		}
 
 		.stTextInput input:focus,
@@ -146,8 +202,9 @@ def inject_theme():
 			padding: 1rem;
 		}
 
-		[data-testid="stMetricLabel"], [data-testid="stMetricValue"] {
+		[data-testid="stMetricValue"] {
 			color: var(--text-main);
+			font-size: 1.6rem !important;
 		}
 
 		[data-testid="stAlert"] {
@@ -166,4 +223,12 @@ def metric_grid(items, columns=4):
 		for col, item in zip(cols, row):
 			with col:
 				with st.container(border=True):
-					st.metric(item[0], format_display_value(item[1]))
+					label = item[0]
+					value = format_display_value(item[1])
+					desc = item[2] if len(item) > 2 else None
+					st.metric(label, value)
+					if desc:
+						st.markdown(
+							f"<p style='color:#b7c2e0; font-size:1.3rem; margin:8px 0 2px 0; line-height:1.4;'>{desc}</p>",
+							unsafe_allow_html=True,
+						)
