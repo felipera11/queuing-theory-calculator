@@ -20,11 +20,41 @@ class MM1N:
         return self._lambda_ / self._mi
 
     def prob_idle(self):
-        sum1 = sum((math.factorial(self._N) / (math.factorial(self._N - i))) * (self.lambda_div_mi ** i) for i in range(self._N + 1))
+        sum1 = sum(
+            (math.factorial(self._N) / (math.factorial(self._N - i)))
+            * (self.lambda_div_mi ** i)
+            for i in range(self._N + 1)
+        )
         return 1 / sum1
 
     def prob_n(self, num):
+        if num < 0 or num > self._N:
+            return 0
+
         return (math.factorial(self._N) / math.factorial(self._N - num)) * (self.lambda_div_mi ** num) * self.prob_idle()
+
+    def prob_less_equal_n(self, n):
+        if n < 0:
+            return 0
+
+        n = min(n, self._N)
+
+        return sum(
+            self.prob_n(i)
+            for i in range(n + 1)
+        )
+
+    def prob_greater_equal_n(self, n):
+        if n <= 0:
+            return 1
+
+        if n > self._N:
+            return 0
+
+        return sum(
+            self.prob_n(i)
+            for i in range(n, self._N + 1)
+        )
 
     def avg_clients_system(self):
         return self._N - ((self._mi / self._lambda_) * (1 - self.prob_idle()))
@@ -42,3 +72,8 @@ class MM1N:
     def avg_time_system(self):
         l = self.avg_clients_system()
         return l / self.effective_lambda()
+
+    def prob_poisson(self, rate, x):
+        if x < 0:
+             raise ValueError("x deve ser >= 0")
+        return math.exp(-rate) * (rate ** x) / math.factorial(x)

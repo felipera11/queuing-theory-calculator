@@ -25,28 +25,105 @@ class MMsN:
         return self.rho
 
     def prob_idle(self):
-        sum1 = sum((math.factorial(self._N) / (math.factorial(self._N - i) * math.factorial(i))) * (self.lambda_div_mi ** i)
-        for i in range(self._s))
-        sum2 = sum((math.factorial(self._N) / (math.factorial(self._N - i) * math.factorial(self._s) * (self._s ** (i - self._s)))) * (self.lambda_div_mi ** i)
-        for i in range(self._s, self._N + 1))
+        sum1 = sum(
+            (
+                math.factorial(self._N)
+                / (
+                    math.factorial(self._N - i)
+                    * math.factorial(i)
+                )
+            )
+            * (self.lambda_div_mi ** i)
+            for i in range(self._s)
+        )
+
+        sum2 = sum(
+            (
+                math.factorial(self._N)
+                / (
+                    math.factorial(self._N - i)
+                    * math.factorial(self._s)
+                    * (self._s ** (i - self._s))
+                )
+            )
+            * (self.lambda_div_mi ** i)
+            for i in range(self._s, self._N + 1)
+        )
 
         return 1 / (sum1 + sum2)
 
     def prob_n(self, num):
         if num < 0 or num > self._N:
             return 0
+
         if num < self._s:
-            return (math.factorial(self._N) / (math.factorial(self._N - num) * math.factorial(num))) * (self.lambda_div_mi ** num) * self.prob_idle()
-        return (math.factorial(self._N) / (math.factorial(self._N - num) * math.factorial(self._s) * (self._s ** (num - self._s)))) * (self.lambda_div_mi ** num) * self.prob_idle()
+            return (
+                math.factorial(self._N)
+                / (
+                    math.factorial(self._N - num)
+                    * math.factorial(num)
+                )
+            ) * (
+                self.lambda_div_mi ** num
+            ) * self.prob_idle()
+
+        return (
+            math.factorial(self._N)
+            / (
+                math.factorial(self._N - num)
+                * math.factorial(self._s)
+                * (self._s ** (num - self._s))
+            )
+        ) * (
+            self.lambda_div_mi ** num
+        ) * self.prob_idle()
+
+    def prob_less_equal_n(self, n):
+        if n < 0:
+            return 0
+
+        n = min(n, self._N)
+
+        return sum(
+            self.prob_n(i)
+            for i in range(n + 1)
+        )
+
+    def prob_greater_equal_n(self, n):
+        if n <= 0:
+            return 1
+
+        if n > self._N:
+            return 0
+
+        return sum(
+            self.prob_n(i)
+            for i in range(n, self._N + 1)
+        )
 
     def avg_clients_system(self):
-        return sum(i * self.prob_n(i) for i in range(1, self._N + 1))
-    
+        return sum(
+            i * self.prob_n(i)
+            for i in range(1, self._N + 1)
+        )
+
     def avg_clients_queue(self):
-        return self.avg_clients_system() - (self.lambda_div_mi * (self._N - self.avg_clients_system()))
+        return (
+            self.avg_clients_system()
+            - (
+                self.lambda_div_mi
+                * (
+                    self._N
+                    - self.avg_clients_system()
+                )
+            )
+        )
 
     def effective_lambda(self):
-        return self._lambda_ * (self._N - self.avg_clients_system())
+        return self._lambda_ * (
+            self._N
+            - self.avg_clients_system()
+        )
 
     def avg_time_queue(self):
         lq = self.avg_clients_queue()
@@ -55,3 +132,8 @@ class MMsN:
     def avg_time_system(self):
         l = self.avg_clients_system()
         return l / self.effective_lambda()
+
+    def prob_poisson(self, rate, x):
+        if x < 0:
+             raise ValueError("x deve ser >= 0")
+        return math.exp(-rate) * (rate ** x) / math.factorial(x)

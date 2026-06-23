@@ -1,5 +1,7 @@
 import streamlit as st
 
+from utils.probability_tables import mostrar_tabela_n
+
 
 def format_display_value(value):
 	if isinstance(value, int):
@@ -218,21 +220,22 @@ def inject_theme():
 
 def show_n_prob(fila, n, op):
 	"""Renders the P(N op n) metric card. No-op if n <= 0."""
-	if n <= 0:
-		return
-	if op == "=":
-		prob = fila.prob_n(n)
-		label = f"P(N = {n})"
-		desc = f"Probabilidade de exatamente {n} clientes no sistema"
-	elif op == "<":
-		prob = sum(fila.prob_n(i) for i in range(n))
-		label = f"P(N < {n})"
-		desc = f"Probabilidade de menos de {n} clientes no sistema"
-	else:
-		prob = 1 - sum(fila.prob_n(i) for i in range(n + 1))
-		label = f"P(N > {n})"
-		desc = f"Probabilidade de mais de {n} clientes no sistema"
-	metric_grid([(label, prob, desc)], columns=1)
+	if n > 0:
+		if op == "=":
+			prob = fila.prob_n(n)
+			label = f"P(N = {n})"
+			desc = f"Probabilidade de exatamente {n} clientes no sistema"
+		elif op == "<":
+			prob = sum(fila.prob_n(i) for i in range(n))
+			label = f"P(N < {n})"
+			desc = f"Probabilidade de menos de {n} clientes no sistema"
+		else:
+			prob = 1 - sum(fila.prob_n(i) for i in range(n + 1))
+			label = f"P(N > {n})"
+			desc = f"Probabilidade de mais de {n} clientes no sistema"
+		metric_grid([(label, prob, desc)], columns=1)
+
+	mostrar_tabela_n(fila)
 
 
 def metric_grid(items, columns=4):

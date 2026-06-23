@@ -105,29 +105,60 @@ class PriorityQueue:
                 raise ValueError(f"Denominador inválido para classe {k}")
             return 1 / denom + 1 / self.mu
 
+    def _mms_W(self, lam: float) -> float:
+        """W for an M/M/s queue with arrival rate lam (used for preemptive s>1)."""
+        s, mu = self.s, self.mu
+        rho = lam / (s * mu)
+        if rho >= 1:
+            raise ValueError("Sistema instável")
+        a = lam / mu
+        soma = sum((a ** n) / math.factorial(n) for n in range(s))
+        termo_final = (a ** s) / math.factorial(s) * (1 / (1 - rho))
+        P0 = 1 / (soma + termo_final)
+        Lq = P0 * (a ** s) * rho / (math.factorial(s) * ((1 - rho) ** 2))
+        Wq = Lq / lam if lam > 0 else 0
+        return Wq + (1 / mu)
+
+    def _W_preemptive_multi_server(self) -> list[float]:
+        """W per class for preemptive priority with s>1 servers."""
+        Ws = []
+        for k in range(len(self.lambdas)):
+            lambda_acumulado = sum(self.lambdas[:k + 1])
+            W_bar = self._mms_W(lambda_acumulado)
+            if k == 0:
+                Ws.append(W_bar)
+            else:
+                soma = sum(self.lambdas[i] * Ws[i] for i in range(k))
+                Wk = (lambda_acumulado * W_bar - soma) / self.lambdas[k]
+                Ws.append(Wk)
+        return Ws
+
     def results(self) -> list[dict]:
         out = []
+
+        if self.preemptive and self.s > 1:
+            Ws = self._W_preemptive_multi_server()
+            for k, lam_k in enumerate(self.lambdas, start=1):
+                W_k = Ws[k - 1]
+                mu_k = self.mus[k - 1]
+                Wq_k = W_k - 1.0 / mu_k
+                lam_ref = sum(self.lambdas[:k])
+                L_k = lam_ref * W_k
+                Lq_k = L_k - lam_ref / mu_k
+                out.append({"classe": k, "lambda": lam_k, "mu": mu_k,
+                            "W": W_k, "L": L_k, "Wq": Wq_k, "Lq": Lq_k})
+            return out
+
         for k, lam_k in enumerate(self.lambdas, start=1):
             W_k = self._W_k(k)
             mu_k = self.mus[k - 1]
             Wq_k = W_k - 1.0 / mu_k
-
             if self.preemptive:
-                # L = (Σλᵢ i=1..k) × W_k
                 lam_ref = sum(self.lambdas[:k])
             else:
                 lam_ref = lam_k
-
             L_k = lam_ref * W_k
             Lq_k = L_k - lam_ref / mu_k
-
-            out.append({
-                "classe": k,
-                "lambda": lam_k,
-                "mu": mu_k,
-                "W":  W_k,
-                "L":  L_k,
-                "Wq": Wq_k,
-                "Lq": Lq_k,
-            })
+            out.append({"classe": k, "lambda": lam_k, "mu": mu_k,
+                        "W": W_k, "L": L_k, "Wq": Wq_k, "Lq": Lq_k})
         return out

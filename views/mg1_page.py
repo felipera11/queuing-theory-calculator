@@ -1,7 +1,8 @@
+import math
 import streamlit as st
 
 from models.mg1_model import MG1
-from utils.input_helpers import input_float_value, input_lambda, input_mi
+from utils.input_helpers import input_float_value, input_integer, input_lambda, input_mi
 from utils.ui import metric_grid
 
 
@@ -38,18 +39,28 @@ def render():
 
     st.divider()
 
+    poisson = input_integer(
+        "Número de chegadas/atendimentos (x)",
+        "mg1_poisson",
+        default=0,
+        placeholder="Ex: 3",
+        min_value=0,
+        help_text="Valor inteiro usado no cálculo Poisson.",
+    )
+
     if st.button("Calcular", key="mg1_btn"):
 
         try:
             sigma2_val = sigma2 if sigma2 is not None else 0.0
-            fila = MG1(lambda_, mi, sigma2_val)
+            sigma_val = math.sqrt(sigma2_val)
+            fila = MG1(lambda_, mi, sigma_val)
 
         except Exception as e:
             st.error(str(e))
             return
 
         st.subheader("Resultados")
-        st.caption(f"σ² usado no cálculo: {sigma2_val:.6g}")
+        st.caption(f"σ² usado no cálculo: {fila.sigma2:.6g}")
 
         metric_grid([
             ("ρ",  f"{fila.rho:.4g}", "Taxa de ocupação (λ/μ)"),
@@ -59,3 +70,26 @@ def render():
             ("L",  f"{fila.avg_clients_system():.4g}", "Número médio de clientes no sistema"),
             ("W",  f"{fila.avg_time_system():.4g}", "Tempo médio gasto no sistema"),
         ], columns=2)
+
+        prob_chegadas = fila.prob_poisson(lambda_, poisson)
+        prob_atendimentos = fila.prob_poisson(mi, poisson)
+
+        c7, c8 = st.columns(2)
+
+        with c7:
+            with st.container(border=True):
+                st.metric(
+                    "Prob. chegadas",
+                    f"{prob_chegadas:.4g}",
+                    help=f"{prob_chegadas * 100:.2f}%",
+                )
+                st.caption(f"Probabilidade Poisson de {poisson} chegadas (taxa λ = {lambda_})")
+
+        with c8:
+            with st.container(border=True):
+                st.metric(
+                    "Prob. atendimentos",
+                    f"{prob_atendimentos:.4g}",
+                    help=f"{prob_atendimentos * 100:.2f}%",
+                )
+                st.caption(f"Probabilidade Poisson de {poisson} atendimentos (taxa μ = {mi})")

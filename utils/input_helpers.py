@@ -3,6 +3,12 @@ import ast
 import streamlit as st
 
 
+def calculate_rate(times):
+    if len(times) == 0 or sum(times) == 0:
+        return 0
+    return len(times) / sum(times)
+
+
 def _parse_numeric_expression(value_str):
     normalized_value = value_str.replace(",", ".").strip()
 
@@ -153,3 +159,13 @@ def input_float_value(label, key, default=0.0, placeholder=None, min_value=None,
         return default
 
     return value
+
+
+def input_float(label, placeholder):
+    value_str = st.text_input(label, placeholder=placeholder)
+
+    try:
+        return float(value_str) if value_str else 0
+    except Exception:
+        st.error(f"Digite um número válido para {label}")
+        return 0

@@ -1,5 +1,5 @@
 import streamlit as st
-from views import mm1_page, mms_page, mm1k_page, mmsk_page, mm1n_page, mmsn_page, mg1_page, priority_page
+from views import mm1_page, mms_page, mm1k_page, mmsk_page, mm1n_page, mmsn_page, mg1_page, priority_page, guide_page
 from utils.ui import inject_theme
 
 
@@ -16,6 +16,7 @@ pages = {
     "M/M/s>1/N": mmsn_page,
     "M/G/1": mg1_page,
     "Prioridades": priority_page,
+    "Guia λ e μ": guide_page,
 }
 
 MODEL_LABELS = {
@@ -27,6 +28,7 @@ MODEL_LABELS = {
     "M/M/s>1/N":   "M/M/s>1/N  —  s servidores, pop. N",
     "M/G/1":       "M/G/1  —  serviço geral",
     "Prioridades": "Prioridades  —  múltiplas classes",
+    "Guia λ e μ": "📚 Guia  —  como encontrar λ e μ",
 }
 
 if "selected_model" not in st.session_state:

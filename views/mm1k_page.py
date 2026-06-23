@@ -1,7 +1,7 @@
 import streamlit as st
 from models.mm1k_model import MM1K
-from utils.input_helpers import input_integer, input_lambda, input_mi, input_n_with_operator
-from utils.ui import metric_grid, show_n_prob
+from utils.input_helpers import input_integer, input_lambda, input_mi
+from utils.probability_tables import mostrar_tabela_n
 
 
 def render():
@@ -28,7 +28,36 @@ def render():
             help_text="Número máximo de clientes no sistema (fila + em atendimento). Chegadas extras são rejeitadas.",
         )
 
-    n, n_op = input_n_with_operator("mm1k", max_value=int(k))
+    st.subheader("Parâmetros opcionais")
+
+    col4, col5, col6 = st.columns(3)
+
+    with col4:
+        n = input_integer(
+            "n",
+            "mm1k_n",
+            default=0,
+            placeholder="Ex: 3",
+            min_value=0,
+            help_text="Calcula probabilidades P(N=n), P(N≤n) e P(N≥n).",
+        )
+
+    with col5:
+        tipo_n = st.selectbox(
+            "Tipo de probabilidade",
+            ["P(N=n)", "P(N≤n)", "P(N≥n)"],
+            key="mm1k_tipo_n",
+        )
+
+    with col6:
+        poisson = input_integer(
+            "Número de chegadas/atendimentos (x)",
+            "mm1k_poisson",
+            default=0,
+            placeholder="Ex: 3",
+            min_value=0,
+            help_text="Valor inteiro usado no cálculo Poisson.",
+        )
 
     st.divider()
 
@@ -40,18 +69,85 @@ def render():
             st.error(str(e))
             return
 
-        st.subheader("Resultados")
-        metric_grid([
-            ("ρ",  f"{fila.rho:.4g}",               "Taxa de ocupação (λ/μ, sem considerar perdas)"),
-            ("P₀", f"{fila.prob_idle():.4g}",        "Probabilidade de o sistema estar vazio"),
-            ("L",  f"{fila.avg_clients_system():.4g}", "Número médio de clientes no sistema"),
-            ("Lq", f"{fila.avg_clients_queue():.4g}", "Número médio de clientes na fila"),
-            ("W",  f"{fila.avg_time_system():.4g}",  "Tempo médio gasto no sistema"),
-            ("Wq", f"{fila.avg_time_queue():.4g}",   "Tempo médio de espera na fila"),
-        ], columns=2)
+        st.subheader("Resultados principais")
 
-        metric_grid([
-            (f"P{k}", f"{fila.prob_n(k):.4g}", f"Probabilidade de bloqueio: sistema cheio (N = {k})"),
-        ], columns=1)
+        c1, c2, c3 = st.columns(3)
 
-        show_n_prob(fila, n, n_op)
+        with c1:
+            with st.container(border=True):
+                st.metric("Taxa de ocupação (ρ)", f"{fila.rho:.4g}")
+
+        with c2:
+            with st.container(border=True):
+                st.metric(
+                    "Prob. do sistema ocioso (P0)",
+                    f"{fila.prob_idle():.4g}",
+                    help=f"{fila.prob_idle() * 100:.2f}%",
+                )
+                st.caption("Probabilidade de nenhum cliente estar no sistema")
+
+        with c3:
+            with st.container(border=True):
+                st.metric("Número médio no sistema (L)", f"{fila.avg_clients_system():.4g}")
+                st.caption("Número médio de clientes no sistema (fila + em atendimento)")
+
+        c4, c5, c6 = st.columns(3)
+
+        with c4:
+            with st.container(border=True):
+                st.metric("Número médio na fila (Lq)", f"{fila.avg_clients_queue():.4g}")
+                st.caption("Número médio de clientes aguardando atendimento na fila")
+
+        with c5:
+            with st.container(border=True):
+                st.metric("Tempo médio no sistema (W)", f"{fila.avg_time_system():.4g}")
+                st.caption("Tempo médio que um cliente passa no sistema (fila + atendimento)")
+
+        with c6:
+            with st.container(border=True):
+                st.metric("Tempo médio na fila (Wq)", f"{fila.avg_time_queue():.4g}")
+                st.caption("Tempo médio que um cliente espera na fila antes de ser atendido")
+
+        with st.container(border=True):
+            st.metric(
+                f"P(K) — Prob. de bloqueio (N = {k})",
+                f"{fila.prob_n(k):.4g}",
+                help=f"{fila.prob_n(k) * 100:.2f}%",
+            )
+            st.caption(f"Probabilidade de o sistema estar cheio (K = {k}): cliente que chega é perdido")
+
+        st.subheader("Resultados condicionais")
+
+        c7, c8 = st.columns(2)
+
+        if tipo_n == "P(N=n)":
+            resultado_n = fila.prob_n(n)
+            desc_n = f"Probabilidade de haver exatamente {n} clientes no sistema"
+        elif tipo_n == "P(N≤n)":
+            resultado_n = fila.prob_less_equal_n(n)
+            desc_n = f"Probabilidade de haver no máximo {n} clientes no sistema"
+        else:
+            resultado_n = fila.prob_greater_equal_n(n)
+            desc_n = f"Probabilidade de haver pelo menos {n} clientes no sistema"
+
+        with c7:
+            with st.container(border=True):
+                st.metric(tipo_n, f"{resultado_n:.4g}", help=f"{resultado_n * 100:.2f}%")
+                st.caption(desc_n)
+
+        prob_chegadas = fila.prob_poisson(lambda_, poisson)
+        prob_atendimentos = fila.prob_poisson(mi, poisson)
+
+        with c8:
+            with st.container(border=True):
+                st.metric("Prob. chegadas", f"{prob_chegadas:.4g}", help=f"{prob_chegadas * 100:.2f}%")
+                st.caption(f"Probabilidade Poisson de {poisson} chegadas (taxa λ = {lambda_})")
+
+        c9, _ = st.columns(2)
+
+        with c9:
+            with st.container(border=True):
+                st.metric("Prob. atendimentos", f"{prob_atendimentos:.4g}", help=f"{prob_atendimentos * 100:.2f}%")
+                st.caption(f"Probabilidade Poisson de {poisson} atendimentos (taxa μ = {mi})")
+
+        mostrar_tabela_n(fila)

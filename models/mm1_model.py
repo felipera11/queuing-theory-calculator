@@ -23,7 +23,17 @@ class MM1:
         if n < 0:
             raise ValueError("n deve ser >= 0")
         return (1 - self.rho) * (self.rho ** n)
-    
+
+    def prob_less_equal_n(self, n):
+        if n < 0:
+            raise ValueError("n deve ser >= 0")
+        return 1 - (self.rho ** (n + 1))
+
+    def prob_greater_equal_n(self, n):
+        if n < 0:
+            raise ValueError("n deve ser >= 0")
+        return self.rho ** n
+
     def prob_greater_r(self, r):
         if r < 0:
             raise ValueError("r deve ser >= 0")
@@ -53,3 +63,8 @@ class MM1:
 
     def avg_time_queue(self):
         return self._lambda_ / (self._mi * self.diff)
+
+    def prob_poisson(self, rate, x):
+        if x < 0:
+            raise ValueError("x deve ser >= 0")
+        return math.exp(-rate) * (rate ** x) / math.factorial(x)

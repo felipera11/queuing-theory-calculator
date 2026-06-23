@@ -1,8 +1,7 @@
 import streamlit as st
 
 from models.priority_model import PriorityQueue
-from utils.input_helpers import input_integer, _parse_numeric_expression
-from utils.ui import metric_grid
+from utils.input_helpers import _parse_numeric_expression
 
 
 def _parse_rate(value_str, label):
@@ -15,6 +14,22 @@ def _parse_rate(value_str, label):
 
 
 def render():
+    st.markdown("""
+        <style>
+        [data-testid="stMetric"] {
+            text-align: center;
+        }
+        [data-testid="stMetricLabel"] {
+            display: flex;
+            justify-content: center;
+        }
+        [data-testid="stMetricValue"] {
+            display: flex;
+            justify-content: center;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     st.header("Modelo com Prioridades")
     st.info(
         "Fila com **múltiplas classes de clientes** com prioridades distintas. "
@@ -25,26 +40,165 @@ def render():
         icon="ℹ️",
     )
 
-    mode = st.radio(
-        "Tipo de prioridade",
-        ["Com Interrupção (Preemptivo)", "Sem Interrupção (Não-preemptivo)"],
-        horizontal=True,
+    preemptive = st.toggle(
+        "Com interrupção (preemptivo)",
+        value=False,
+        help="Ligado = com interrupção | Desligado = sem interrupção",
         key="priority_mode",
     )
-    preemptive = mode.startswith("Com Interrupção")
 
     st.divider()
 
     col_s, col_mu = st.columns(2)
 
     with col_s:
-        s = input_integer(
+        s_str = st.text_input(
+            "s — Número de servidores",
+            value="1",
+            key="priority_s",
+            help="Quantidade de servidores compartilhados por todas as classes.",
+        )
+        try:
+            s = int(float(s_str)) if s_str else 1
+        except ValueError:
+            st.error("Digite um número inteiro válido para s")
+            s = 1
+
+    with col_mu:
+        mu_str = st.text_input(
+            "μ — Taxa de atendimento (clientes/unidade de tempo)",
+            value="40",
+            key="priority_mu",
+            help="Taxa de atendimento comum a todas as classes (por servidor). Aceita frações: ex. 1/3.",
+        )
+        mu = _parse_rate(mu_str, "μ")
+
+    st.divider()
+
+    n_classes_str = st.text_input(
+        "Número de classes de prioridade",
+        value="2",
+        key="priority_n_classes",
+        help="Quantas classes de clientes com prioridades distintas existem no sistema.",
+    )
+    try:
+        n_classes = max(2, int(float(n_classes_str))) if n_classes_str else 2
+    except ValueError:
+        st.error("Digite um número inteiro válido para o número de classes")
+        n_classes = 2
+
+    st.caption("Classe 1 = maior prioridade")
+
+    lambdas = []
+    cols = st.columns(min(n_classes, 5))
+
+    for k in range(n_classes):
+        col = cols[k % len(cols)]
+        with col:
+            lam_str = st.text_input(
+                f"λ{k + 1} — Chegadas Classe {k + 1}",
+                value="10",
+                key=f"priority_lambda_{k}",
+            )
+            lambdas.append(_parse_rate(lam_str, f"λ{k + 1}"))
+
+    st.divider()
+
+    if st.button("Calcular", key="priority_btn"):
+        try:
+            fila = PriorityQueue(
+                lambdas=lambdas,
+                mu=mu,
+                s=s,
+                preemptive=preemptive,
+            )
+        except Exception as e:
+            st.error(str(e))
+            return
+
+        mode_label = "Com interrupção (preemptivo)" if preemptive else "Sem interrupção (não-preemptivo)"
+        st.subheader(f"Resultados — {mode_label}")
+
+        with st.container(border=True):
+            st.metric("Taxa de ocupação total (ρ)", f"{fila.rho_total:.4g}")
+            st.caption("Fração do tempo em que os servidores estão ocupados (λ_total / (s·μ))")
+
+        resultados = fila.results()
+
+        for res in resultados:
+            st.divider()
+            k = res["classe"]
+            st.markdown(f"**Classe {k}** — λ{k} = {res['lambda']}  |  μ = {mu}")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                with st.container(border=True):
+                    st.metric("Tempo médio no sistema (W)", f"{res['W']:.4f}")
+                    st.caption("Tempo médio que um cliente da classe passa no sistema (fila + atendimento)")
+
+            with col2:
+                with st.container(border=True):
+                    st.metric("Tempo médio na fila (Wq)", f"{res['Wq']:.4f}")
+                    st.caption("Tempo médio que um cliente da classe espera na fila antes de ser atendido")
+
+            col3, col4 = st.columns(2)
+
+            with col3:
+                with st.container(border=True):
+                    st.metric("Número médio no sistema (L)", f"{res['L']:.4f}")
+                    st.caption("Número médio de clientes da classe no sistema (fila + em atendimento)")
+
+            with col4:
+                with st.container(border=True):
+                    st.metric("Número médio na fila (Lq)", f"{res['Lq']:.4f}")
+                    st.caption("Número médio de clientes da classe aguardando na fila")
+
+
+def render():
+    st.markdown("""
+        <style>
+        [data-testid="stMetric"] {
+            text-align: center;
+        }
+        [data-testid="stMetricLabel"] {
+            display: flex;
+            justify-content: center;
+        }
+        [data-testid="stMetricValue"] {
+            display: flex;
+            justify-content: center;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+    st.header("Modelo com Prioridades")
+    st.info(
+        "Fila com **múltiplas classes de clientes** com prioridades distintas. "
+        "Classe 1 tem a maior prioridade. "
+        "**Com interrupção (preemptivo):** cliente de alta prioridade interrompe o atendimento em curso. "
+        "**Sem interrupção (não-preemptivo):** aguarda o atendimento atual concluir. "
+        "W e Wq são expressos na mesma unidade de tempo de λ e μ.",
+        icon="ℹ️",
+    )
+
+    preemptive = st.toggle(
+        "Com interrupção (preemptivo)",
+        value=False,
+        help="Ligado = com interrupção | Desligado = sem interrupção",
+        key="priority_mode",
+    )
+
+    st.divider()
+
+    col_s, col_mu = st.columns(2)
+
+    with col_s:
+        s = st.text_input(
             "s — Número de canais de serviço (servidores)",
-            "priority_s",
-            default=1,
-            placeholder="Ex: 1",
-            min_value=1,
-            help_text="Quantidade de servidores compartilhados por todas as classes.",
+            value="1",
+            key="priority_s",
+            help="Quantidade de servidores compartilhados por todas as classes.",
         )
 
     with col_mu:
@@ -77,15 +231,13 @@ def render():
 
     st.divider()
 
-    n_classes = input_integer(
+    n_classes = st.text_input(
         "Número de classes de prioridade",
-        "priority_n_classes",
-        default=2,
-        placeholder="Ex: 2",
-        min_value=2,
-        max_value=10,
-        help_text="Quantas classes de clientes com prioridades distintas existem no sistema.",
+        value="2",
+        key="priority_n_classes",
+        help="Quantas classes de clientes com prioridades distintas existem no sistema.",
     )
+        
 
     st.caption("Classe 1 = maior prioridade")
 
@@ -144,19 +296,28 @@ def render():
         mode_label = "Com interrupção (preemptivo)" if preemptive else "Sem interrupção (não-preemptivo)"
         st.subheader(f"Resultados — {mode_label}")
 
-        metric_grid([("ρ total", f"{fila.rho_total:.4g}", "Taxa de ocupação total do(s) servidor(es)")], columns=1)
-        st.divider()
+        with st.container(border=True):
+            st.metric("Taxa de ocupação total (ρ)", f"{fila.rho_total:.4g}")
 
         results = fila.results()
         for res in results:
+            st.divider()
             k = res["classe"]
             mu_label = f"μ{k} = {res['mu']}" if use_per_class_mu else f"μ = {mu}"
             st.markdown(f"**Classe {k}** — λ{k} = {res['lambda']}  |  {mu_label}")
-            metric_grid([
-                ("W",  f"{res['W']:.4f}",  "Tempo médio gasto no sistema"),
-                ("Wq", f"{res['Wq']:.4f}", "Tempo médio de espera na fila"),
-                ("L",  f"{res['L']:.4f}",  "Número médio de clientes no sistema"),
-                ("Lq", f"{res['Lq']:.4f}", "Número médio de clientes na fila"),
-            ], columns=2)
-            if k < len(results):
-                st.divider()
+
+            col1, col2 = st.columns(2)
+            with col1:
+                with st.container(border=True):
+                    st.metric("Tempo médio no sistema (W)", f"{res['W']:.4f}")
+            with col2:
+                with st.container(border=True):
+                    st.metric("Tempo médio na fila (Wq)", f"{res['Wq']:.4f}")
+
+            col3, col4 = st.columns(2)
+            with col3:
+                with st.container(border=True):
+                    st.metric("Número médio no sistema (L)", f"{res['L']:.4f}")
+            with col4:
+                with st.container(border=True):
+                    st.metric("Número médio na fila (Lq)", f"{res['Lq']:.4f}")

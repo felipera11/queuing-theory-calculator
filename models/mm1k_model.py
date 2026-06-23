@@ -35,8 +35,34 @@ class MM1K:
         p0 = self.prob_idle()
         return p0 * (self.rho**n)
 
+    def prob_less_equal_n(self, n):
+        if n < 0:
+            return 0
+
+        n = min(n, self._k)
+
+        return sum(
+            self.prob_n(i)
+            for i in range(n + 1)
+        )
+
+    def prob_greater_equal_n(self, n):
+        if n <= 0:
+            return 1
+
+        if n > self._k:
+            return 0
+
+        return sum(
+            self.prob_n(i)
+            for i in range(n, self._k + 1)
+        )
+
     def avg_clients_system(self):
-        return (self.rho / (1 - self.rho))-(((self._k + 1) * self.rhok1) / (1 - self.rhok1))
+        return (
+            (self.rho / (1 - self.rho))
+            - (((self._k + 1) * self.rhok1) / (1 - self.rhok1))
+        )
     
     def avg_clients_queue(self):
         l = self.avg_clients_system()
@@ -52,3 +78,8 @@ class MM1K:
     def avg_time_system(self):
         l = self.avg_clients_system()
         return l / self.effective_lambda()
+
+    def prob_poisson(self, rate, x):
+        if x < 0:
+             raise ValueError("x deve ser >= 0")
+        return math.exp(-rate) * (rate ** x) / math.factorial(x)

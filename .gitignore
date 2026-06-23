@@ -50,6 +50,6 @@ htmlcov/
 # 🔹 Arquivos do projeto não publicados
 apostilas/
 CLAUDE.md
-gerar_guia_pdf.py
-guia_calculadora_filas.pdf
+gerar_*.py
+*.pdf
 *.zip

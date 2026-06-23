@@ -37,7 +37,7 @@ pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
-Acesse `http://localhost:8501` no navegador.
+Acesse `http://127.0.0.1:8501` no navegador.
 
 ## Testes
 

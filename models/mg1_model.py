@@ -1,6 +1,12 @@
+import math
+
+
 class MG1:
 
     def __init__(self, lambda_, mi, sigma2):
+
+        if lambda_ <= 0:
+            raise ValueError("λ deve ser maior que zero")
 
         if mi <= 0:
             raise ValueError("μ deve ser maior que zero")
@@ -15,7 +21,7 @@ class MG1:
 
         self.lambda_ = lambda_
         self.mi = mi
-        self.sigma2 = sigma2
+        self.sigma2 = float(sigma2)
 
     @property
     def rho(self):
@@ -39,3 +45,9 @@ class MG1:
 
     def avg_time_system(self):
         return self.avg_time_queue() + (1 / self.mi)
+
+    def prob_poisson(self, rate, x):
+        if x < 0:
+            raise ValueError("x deve ser >= 0")
+
+        return math.exp(-rate) * (rate ** x) / math.factorial(x)
