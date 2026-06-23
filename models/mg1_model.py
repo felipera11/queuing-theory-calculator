@@ -3,7 +3,7 @@ import math
 
 class MG1:
 
-    def __init__(self, lambda_, mi, sigma2):
+    def __init__(self, lambda_, mi, sigma):
 
         if lambda_ <= 0:
             raise ValueError("λ deve ser maior que zero")
@@ -11,8 +11,8 @@ class MG1:
         if mi <= 0:
             raise ValueError("μ deve ser maior que zero")
 
-        if sigma2 < 0:
-            raise ValueError("σ² deve ser >= 0")
+        if sigma < 0:
+            raise ValueError("σ deve ser >= 0")
 
         rho = lambda_ / mi
 
@@ -21,7 +21,7 @@ class MG1:
 
         self.lambda_ = lambda_
         self.mi = mi
-        self.sigma2 = float(sigma2)
+        self.sigma = sigma
 
     @property
     def rho(self):
@@ -30,6 +30,10 @@ class MG1:
     @property
     def p0(self):
         return 1 - self.rho
+
+    @property
+    def sigma2(self):
+        return self.sigma ** 2
 
     def avg_clients_queue(self):
         return (

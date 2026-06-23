@@ -25,15 +25,15 @@ def render():
         mi = input_mi("mg1")
 
     with col3:
-        sigma2 = input_float_value(
-            "σ² — Variância do tempo de serviço (opcional)",
+        sigma = input_float_value(
+            "σ — Desvio padrão do tempo de serviço (opcional)",
             "mg1_sigma2",
             default=None,
-            placeholder="Ex: 0.0025",
+            placeholder="Ex: 0.05",
             help_text=(
-                "Variância da distribuição do tempo de serviço (na mesma unidade de tempo). "
-                "Para distribuição exponencial: σ² = 1/μ². "
-                "Se omitido, usa σ² = 0 (serviço determinístico, M/D/1)."
+                "Desvio padrão da distribuição do tempo de serviço (na mesma unidade de tempo). "
+                "Para distribuição exponencial: σ = 1/μ. "
+                "Se omitido, usa σ = 0 (serviço determinístico, M/D/1)."
             ),
         )
 
@@ -51,8 +51,7 @@ def render():
     if st.button("Calcular", key="mg1_btn"):
 
         try:
-            sigma2_val = sigma2 if sigma2 is not None else 0.0
-            sigma_val = math.sqrt(sigma2_val)
+            sigma_val = sigma if sigma is not None else 0.0
             fila = MG1(lambda_, mi, sigma_val)
 
         except Exception as e:
@@ -60,7 +59,7 @@ def render():
             return
 
         st.subheader("Resultados")
-        st.caption(f"σ² usado no cálculo: {fila.sigma2:.6g}")
+        st.caption(f"σ = {fila.sigma:.6g}  |  σ² = {fila.sigma2:.6g}")
 
         metric_grid([
             ("ρ",  f"{fila.rho:.4g}", "Taxa de ocupação (λ/μ)"),

@@ -14,7 +14,6 @@ class PriorityQueue:
         if len(lambdas) == 0:
             raise ValueError("Informe ao menos uma classe")
 
-        # Per-class service rates (optional, non-preemptive s=1 only)
         if mus is not None:
             if len(mus) != len(lambdas):
                 raise ValueError("mus deve ter o mesmo número de elementos que lambdas")
@@ -28,7 +27,6 @@ class PriorityQueue:
         else:
             self.mus = [float(mu)] * len(lambdas)
 
-        # Per-class variances: default = 1/μ² (exponential)
         if sigma2s is not None:
             if len(sigma2s) != len(lambdas):
                 raise ValueError("sigma2s deve ter o mesmo número de elementos que lambdas")
@@ -40,7 +38,6 @@ class PriorityQueue:
 
         self._use_general = (mus is not None)
 
-        # Check stability
         if self._use_general:
             rho_total = sum(lam / m for lam, m in zip(lambdas, self.mus))
         else:
@@ -65,7 +62,8 @@ class PriorityQueue:
         return self.lambda_total / (self.s * self.mu)
 
     def _sigma(self, k: int) -> float:
-        """Σ(i=1 to k) λᵢ/(sμ) for equal-μ; Σλᵢ/μᵢ for general."""
+        if k <= 0:
+            return 0.0
         if self._use_general:
             return sum(self.lambdas[i] / self.mus[i] for i in range(k))
         return sum(self.lambdas[:k]) / (self.s * self.mu)
@@ -76,7 +74,6 @@ class PriorityQueue:
         return math.factorial(s) * (s * mu - lam) / (r ** s) * soma + s * mu
 
     def _numerator_general(self) -> float:
-        """Σ λᵢ(σᵢ² + 1/μᵢ²) — numerator of Pollaczek-Khinchine mean-value formula."""
         return sum(self.lambdas[i] * (self.sigma2s[i] + 1.0 / (self.mus[i] ** 2))
                    for i in range(len(self.lambdas)))
 
@@ -85,8 +82,6 @@ class PriorityQueue:
         sigma_k = self._sigma(k)
 
         if self._use_general:
-            # Non-preemptive, general service, s=1
-            # Wq_k = Σλᵢ(σᵢ²+1/μᵢ²) / [2(1−σ_{k−1})(1−σ_k)]
             denom = 2 * (1 - sigma_k_minus_1) * (1 - sigma_k)
             if denom <= 0:
                 raise ValueError(f"Denominador inválido para classe {k}")
@@ -106,7 +101,6 @@ class PriorityQueue:
             return 1 / denom + 1 / self.mu
 
     def _mms_W(self, lam: float) -> float:
-        """W for an M/M/s queue with arrival rate lam (used for preemptive s>1)."""
         s, mu = self.s, self.mu
         rho = lam / (s * mu)
         if rho >= 1:
@@ -120,7 +114,6 @@ class PriorityQueue:
         return Wq + (1 / mu)
 
     def _W_preemptive_multi_server(self) -> list[float]:
-        """W per class for preemptive priority with s>1 servers."""
         Ws = []
         for k in range(len(self.lambdas)):
             lambda_acumulado = sum(self.lambdas[:k + 1])

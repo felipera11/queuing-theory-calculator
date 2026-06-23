@@ -192,19 +192,19 @@ class TestQueueModels(unittest.TestCase):
 
     # ------------------------------------------------------------------
     # MG1 — Lista MG1, Exercício 1
-    # λ=0,2, μ=0,25, vários σ²
+    # λ=0,2, μ=0,25, vários σ (desvio padrão); σ²=σ² internamente
     # ------------------------------------------------------------------
     def test_mg1_matches_answer_key(self):
         expected = [
-            (16, 3.2, 4.0, 16.0, 20.0),
-            (9,  2.5, 3.3, 12.5, 16.5),
-            (4,  2.0, 2.8, 10.0, 14.0),
-            (1,  1.7, 2.5,  8.5, 12.5),
-            (0,  1.6, 2.4,  8.0, 12.0),
+            (4, 3.2, 4.0, 16.0, 20.0),
+            (3, 2.5, 3.3, 12.5, 16.5),
+            (2, 2.0, 2.8, 10.0, 14.0),
+            (1, 1.7, 2.5,  8.5, 12.5),
+            (0, 1.6, 2.4,  8.0, 12.0),
         ]
-        for sigma2, lq, l, wq, w in expected:
-            with self.subTest(sigma2=sigma2):
-                model = MG1(0.2, 0.25, sigma2)
+        for sigma, lq, l, wq, w in expected:
+            with self.subTest(sigma=sigma):
+                model = MG1(0.2, 0.25, sigma)
                 self.assert_close(model.avg_clients_queue(), lq, places=1)
                 self.assert_close(model.avg_clients_system(), l, places=1)
                 self.assert_close(model.avg_time_queue(), wq, places=1)
@@ -212,11 +212,11 @@ class TestQueueModels(unittest.TestCase):
 
     # ------------------------------------------------------------------
     # MG1 — Teoria, Exemplo 2a (café expresso, distribuição exponencial)
-    # λ=25/h, μ=40/h (90s → 1/40 h média), σ²=1/μ²=1/1600
+    # λ=25/h, μ=40/h (90s → 1/40 h média), σ=1/μ=1/40
     # Gabarito: Lq=1,042; L=1,667; Wq=0,042; W=0,067
     # ------------------------------------------------------------------
     def test_mg1_cafe_exponencial(self):
-        model = MG1(25, 40, 1 / 1600)
+        model = MG1(25, 40, 1 / 40)
 
         self.assert_close(model.avg_clients_queue(), 1.042, places=2)
         self.assert_close(model.avg_clients_system(), 1.667, places=2)
