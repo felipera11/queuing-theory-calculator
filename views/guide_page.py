@@ -157,6 +157,7 @@ def render():
                 "ρ e μ",
                 "ρ e λ",
                 "L e W",
+                "ρ e Wq",
                 "Lq e Wq"
             ]
         )
@@ -224,6 +225,24 @@ def render():
             )
             st.metric("λ = L / W", f"{l / w:.4g}")
 
+        elif tipo == "ρ e Wq":
+            rho = st.number_input("ρ", min_value=0.0001, max_value=0.9999, value=0.5)
+            wq = st.number_input("Wq", min_value=0.0001, value=1.0)
+
+            st.markdown("### 📌 Possíveis interpretações (M/M/1)")
+
+            st.latex(r"W_q = \frac{\rho}{\mu - \lambda}")
+
+            st.markdown("Usando ρ = λ/μ → isolando μ:")
+
+            mu = (rho / wq) + (rho)  # derivação rearranjada simplificada
+            lam = rho * mu
+
+            st.metric("μ estimado", f"{mu:.4f}")
+            st.metric("λ estimado", f"{lam:.4f}")
+
+            st.success("⚠️ Aproximação válida para M/M/1 em regime estável")
+
         elif tipo == "Lq e Wq":
             lq = st.number_input(
                 "Lq",
@@ -234,3 +253,77 @@ def render():
                 min_value=0.0001
             )
             st.metric("λ = Lq / Wq", f"{lq / wq:.4g}")
+
+# =========================
+    # 🧪 DETECTOR DE MODELO (AJUDA DE PROVA)
+    # =========================
+    with st.expander("🧪 Sugestão automática de modelo (baseado nos dados)"):
+        lam2 = st.number_input("λ (chegadas)", min_value=0.0, value=0.0, key="lam2")
+        mu2 = st.number_input("μ (atendimento)", min_value=0.0001, value=1.0, key="mu2")
+        s2 = st.number_input("s (servidores)", min_value=1, value=1, key="s2")
+        k2 = st.number_input("K (capacidade, se existir)", min_value=0, value=0, key="k2")
+        n2 = st.number_input("N (população, se existir)", min_value=0, value=0, key="n2")
+
+        sigma2 = st.checkbox("Tem variância σ²? (M/G/1)")
+
+        if sigma2:
+            modelo = "M/G/1"
+        elif n2 > 0 and s2 == 1:
+            modelo = "M/M/1/N"
+        elif n2 > 0 and s2 > 1:
+            modelo = "M/M/s>1/N"
+        elif k2 > 0 and s2 == 1:
+            modelo = "M/M/1/K"
+        elif k2 > 0 and s2 > 1:
+            modelo = "M/M/s>1/K"
+        elif s2 == 1:
+            modelo = "M/M/1"
+        else:
+            modelo = "M/M/s>1"
+
+        st.success(f"📌 Modelo sugerido: {modelo}")
+
+    # =========================
+    # ⏱️ TAXAS INVERSAS (MUITO IMPORTANTE EM PROVA)
+    # =========================
+    with st.expander("⏱️ Conversões importantes (pegadinha de prova)"):
+        lam3 = st.number_input("λ (chegadas)", min_value=0.0001, value=1.0, key="lam3")
+        mu3 = st.number_input("μ (atendimento)", min_value=0.0001, value=1.0, key="mu3")
+
+        st.markdown("### ⏳ Tempos médios equivalentes")
+
+        st.metric("Tempo médio entre chegadas (1/λ)", f"{1/lam3:.4f}")
+        st.metric("Tempo médio de atendimento (1/μ)", f"{1/mu3:.4f}")
+
+    # =========================
+    # ⚠️ VALIDAÇÃO DE ENTRADA
+    # =========================
+    with st.expander("⚠️ Validação automática (evita erro bobo)"):
+        lam4 = st.number_input("λ", min_value=0.0, value=1.0, key="lam4")
+        mu4 = st.number_input("μ", min_value=0.0001, value=1.0, key="mu4")
+        s4 = st.number_input("s", min_value=1, value=1, key="s4")
+
+        rho4 = lam4 / (s4 * mu4)
+
+        st.write("ρ =", round(rho4, 4))
+
+        if rho4 >= 1:
+            st.error("❌ Sistema instável → revise λ, μ ou s")
+            st.warning("👉 provável erro: μ menor que λ/s")
+        elif rho4 >= 0.9:
+            st.warning("⚠️ Sistema muito carregado (ρ alto)")
+        else:
+            st.success("✔️ Sistema saudável")
+
+    # =========================
+    # 🧠 MACETE DE PROVA (NOVO)
+    # =========================
+    with st.expander("🧠 Macetes rápidos de prova"):
+        st.markdown("""
+        ✔ Se aparecer “a cada X minutos” → λ ou μ = 1/X  
+        ✔ Se tiver “por hora” → manter consistente  
+        ✔ Se s > 1 → divide por s no ρ  
+        ✔ Se tiver variância → é M/G/1  
+        ✔ Se tiver limite K → clientes são perdidos  
+        ✔ Se tiver população N → taxa depende do sistema  
+        """)
