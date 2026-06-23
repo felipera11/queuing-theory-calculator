@@ -46,3 +46,10 @@ htmlcov/
 
 # 🔹 Claude Code
 .claude/
+
+# 🔹 Arquivos do projeto não publicados
+apostilas/
+CLAUDE.md
+gerar_guia_pdf.py
+guia_calculadora_filas.pdf
+*.zip

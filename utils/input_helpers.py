@@ -60,17 +60,17 @@ def input_rate(label, key_prefix, help_text=None):
 
 def input_lambda(prefix=""):
     return input_rate(
-        "λ — Taxa de chegada (clientes/hora)",
+        "λ — Taxa de chegada (clientes/unidade de tempo)",
         f"{prefix}_lambda",
-        help_text="Número médio de clientes que chegam por hora. Aceita frações: ex. 1/6.",
+        help_text="Número médio de chegadas por unidade de tempo. Aceita frações: ex. 1/6.",
     )
 
 
 def input_mi(prefix=""):
     return input_rate(
-        "μ — Taxa de serviço (clientes/hora)",
+        "μ — Taxa de atendimento (clientes/unidade de tempo)",
         f"{prefix}_mi",
-        help_text="Número médio de clientes atendidos por hora por servidor. Aceita frações: ex. 1/4.",
+        help_text="Número médio de clientes atendidos por unidade de tempo por servidor. Aceita frações: ex. 1/4.",
     )
 
 
@@ -99,6 +99,30 @@ def input_integer(label, key, default=0, placeholder=None, min_value=None, max_v
         return default
 
     return value
+
+
+def input_n_with_operator(prefix, max_value=None):
+    """Renders the n input + operator selectbox side by side. Returns (n, op) where op is '=', '<' or '>'."""
+    col_n, col_op = st.columns(2)
+    with col_n:
+        n = input_integer(
+            "n — Número de clientes (opcional)",
+            f"{prefix}_n",
+            default=0,
+            placeholder="Ex: 3",
+            min_value=0,
+            max_value=max_value,
+            help_text="Calcula a probabilidade de n clientes no sistema (escolha o operador ao lado).",
+        )
+    with col_op:
+        raw = st.selectbox(
+            "Operador  P(N ? n)",
+            ["= (exato)", "< (menor que)", "> (maior que)"],
+            key=f"{prefix}_n_op",
+            help="Define a comparação: P(N = n), P(N < n) ou P(N > n).",
+        )
+    op = raw[0]
+    return n, op
 
 
 def input_float_value(label, key, default=0.0, placeholder=None, min_value=None, max_value=None, help_text=None):

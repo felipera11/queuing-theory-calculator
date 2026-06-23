@@ -216,6 +216,25 @@ def inject_theme():
 	)
 
 
+def show_n_prob(fila, n, op):
+	"""Renders the P(N op n) metric card. No-op if n <= 0."""
+	if n <= 0:
+		return
+	if op == "=":
+		prob = fila.prob_n(n)
+		label = f"P(N = {n})"
+		desc = f"Probabilidade de exatamente {n} clientes no sistema"
+	elif op == "<":
+		prob = sum(fila.prob_n(i) for i in range(n))
+		label = f"P(N < {n})"
+		desc = f"Probabilidade de menos de {n} clientes no sistema"
+	else:
+		prob = 1 - sum(fila.prob_n(i) for i in range(n + 1))
+		label = f"P(N > {n})"
+		desc = f"Probabilidade de mais de {n} clientes no sistema"
+	metric_grid([(label, prob, desc)], columns=1)
+
+
 def metric_grid(items, columns=4):
 	for index in range(0, len(items), columns):
 		row = items[index : index + columns]

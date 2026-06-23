@@ -8,9 +8,10 @@ from utils.ui import metric_grid
 def render():
     st.header("Modelo M/G/1")
     st.info(
-        "Fila com chegadas Poisson (λ), **distribuição de serviço geral** e 1 servidor. "
-        "A distribuição do tempo de serviço pode ser qualquer uma — basta informar a média (1/μ) e o desvio-padrão σ. "
-        "Fórmula de Pollaczek-Khinchine (P-K).",
+        "Chegadas Poisson (λ), **distribuição de serviço geral**, 1 servidor. "
+        "Informe a média (1/μ) e a variância σ² do tempo de serviço. "
+        "Fórmula de Pollaczek-Khinchine (P-K). "
+        "W e Wq são expressos na mesma unidade de tempo de λ e μ.",
         icon="ℹ️",
     )
 
@@ -23,14 +24,15 @@ def render():
         mi = input_mi("mg1")
 
     with col3:
-        sigma = input_float_value(
-            "σ — Desvio-padrão do tempo de serviço (opcional)",
-            "mg1_sigma",
-            placeholder="Ex: 0.05",
+        sigma2 = input_float_value(
+            "σ² — Variância do tempo de serviço (opcional)",
+            "mg1_sigma2",
+            default=None,
+            placeholder="Ex: 0.0025",
             help_text=(
-                "Desvio-padrão da distribuição de serviço (em horas). "
-                "O sistema calcula σ² internamente. "
-                "Se omitido, usa σ = 0 (serviço determinístico → M/D/1)."
+                "Variância da distribuição do tempo de serviço (na mesma unidade de tempo). "
+                "Para distribuição exponencial: σ² = 1/μ². "
+                "Se omitido, usa σ² = 0 (serviço determinístico, M/D/1)."
             ),
         )
 
@@ -39,24 +41,21 @@ def render():
     if st.button("Calcular", key="mg1_btn"):
 
         try:
-            sigma_variance = sigma ** 2 if sigma is not None else 0.0
-            fila = MG1(lambda_, mi, sigma_variance)
+            sigma2_val = sigma2 if sigma2 is not None else 0.0
+            fila = MG1(lambda_, mi, sigma2_val)
 
         except Exception as e:
             st.error(str(e))
             return
 
         st.subheader("Resultados")
-        st.caption(f"σ informado: {sigma}  |  σ² usado no cálculo: {sigma_variance:.6g}")
-
-        w_minutes = fila.avg_time_system() * 60
-        wq_minutes = fila.avg_time_queue() * 60
+        st.caption(f"σ² usado no cálculo: {sigma2_val:.6g}")
 
         metric_grid([
-            ("ρ", fila.rho, "Utilização do servidor (λ/μ)"),
-            ("P₀", fila.p0, "Probabilidade do sistema estar ocioso (P₀ = 1 − ρ)"),
-            ("Lq", fila.avg_clients_queue(), "Número médio de clientes aguardando na fila"),
-            ("Wq", f"{wq_minutes:.4g} min", "Tempo médio que um cliente aguarda na fila"),
-            ("L", fila.avg_clients_system(), "Número médio de clientes no sistema"),
-            ("W", f"{w_minutes:.4g} min", "Tempo médio que um cliente passa no sistema"),
+            ("ρ",  f"{fila.rho:.4g}", "Taxa de ocupação (λ/μ)"),
+            ("P₀", f"{fila.p0:.4g}", "Probabilidade de o sistema estar vazio (P₀ = 1 − ρ)"),
+            ("Lq", f"{fila.avg_clients_queue():.4g}", "Número médio de clientes na fila"),
+            ("Wq", f"{fila.avg_time_queue():.4g}", "Tempo médio de espera na fila"),
+            ("L",  f"{fila.avg_clients_system():.4g}", "Número médio de clientes no sistema"),
+            ("W",  f"{fila.avg_time_system():.4g}", "Tempo médio gasto no sistema"),
         ], columns=2)
